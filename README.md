@@ -1,2 +1,3 @@
-# TrajectoryTester
-Demonstrates different types of trajectory followers
+# Ramsete Follower
+
+Use this program to test the more advanced motion profiler.  Ideally start your robot where the GPS sensor would define as the x=+4foot y=-4foot location.  From Red's perspective this is the top-left corners of the last 2 tiles at the right-hand side.  Face the robot at a 45 degree angle so that it faces the center of the field; the path trajectory will try to have the robot drive through the center of the field and wind up mirrored at the x=+4foot y=+4foot location, facing the corner.
