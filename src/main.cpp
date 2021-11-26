@@ -197,9 +197,7 @@ void testRamseteTrajectory() {
   // Physical offset of sensor on the actual robot to the robot's center of rotation
   vex::gps gpsSensor(ROBOT_GPS_PORT, ROBOT_GPS_MOUNT_OFFSET_X, ROBOT_GPS_MOUNT_OFFSET_Y, distanceUnits::in, ROBOT_GPS_MOUNT_OFFSET_HEADING);
   setStartingPosition();
-  std::vector<vex::gps> vgps;
-  vgps.emplace_back(gpsSensor);
-  m_chassis.AddGpsSensors(&vgps);
+  m_chassis.AddGpsSensor(gpsSensor);
 
   m_chassis.ResetPosition(startingPosition, 0_deg);
   m_chassis.EnableOdom();
