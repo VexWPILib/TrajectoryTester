@@ -8,6 +8,7 @@
 #include "vpi/chassis/DifferentialDriveChassis.h"
 #include "vpi/kinematics/ChassisSpeeds.h"
 #include "vpi/kinematics/DifferentialDriveWheelSpeeds.h"
+#include "vpi/log/Logger.h"
 #include "vpi/trajectory/Trajectory.h"
 #include "vpi/units/QTime.h"
 
@@ -23,6 +24,9 @@ class RamseteTrajectoryFollower {
                               double b=2.0, double zeta=0.7) :
         m_chassis(chassis), m_rc(b, zeta) {
       m_rc.SetTolerance(tolerance);
+      if(!m_chassis.IsOdomEnabled()) {
+        m_chassis.EnableOdom();
+      }
     }
 
     void FollowTrajectory(Trajectory t);

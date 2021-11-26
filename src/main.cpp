@@ -95,7 +95,133 @@ void setStartingPosition() {
   vex::gps gpsSensor(ROBOT_GPS_PORT, ROBOT_GPS_MOUNT_OFFSET_X, ROBOT_GPS_MOUNT_OFFSET_Y, distanceUnits::in, ROBOT_GPS_MOUNT_OFFSET_HEADING);
   startingPosition = VexGpsPose2d(gpsSensor.xPosition(distanceUnits::in) * inch, 
                             gpsSensor.yPosition(distanceUnits::in) * inch,
-                            gpsSensor.heading() * degree);
+                        gpsSensor.heading() * degree);
+  printf("GPS: %d, %d, %d\n", (int)gpsSensor.xPosition(distanceUnits::in),
+                                (int)gpsSensor.yPosition(distanceUnits::in),
+                                (int)gpsSensor.heading());
+}
+
+void testSimpleTrajectory() {
+  printf("Start testSimpleTrajectory\n");
+  vex::motor ml1 = motor(ROBOT_LEFT_MOTOR_1, ROBOT_GEAR_SETTING, ROBOT_LEFT_MOTOR_1_REV);
+  vex::motor ml2 = motor(ROBOT_LEFT_MOTOR_2, ROBOT_GEAR_SETTING, ROBOT_LEFT_MOTOR_2_REV);
+  vex::motor ml3 = motor(ROBOT_LEFT_MOTOR_3, ROBOT_GEAR_SETTING, ROBOT_LEFT_MOTOR_3_REV);
+  vex::motor mr1 = motor(ROBOT_RIGHT_MOTOR_1, ROBOT_GEAR_SETTING, ROBOT_RIGHT_MOTOR_1_REV);
+  vex::motor mr2 = motor(ROBOT_RIGHT_MOTOR_2, ROBOT_GEAR_SETTING, ROBOT_RIGHT_MOTOR_2_REV);
+  vex::motor mr3 = motor(ROBOT_RIGHT_MOTOR_3, ROBOT_GEAR_SETTING, ROBOT_RIGHT_MOTOR_3_REV);
+  vex::motor_group mg_left{ml1, ml2 ,ml3};
+  vex::motor_group mg_right{mr1, mr2, mr3};
+  DifferentialDriveChassis m_chassis(mg_left, mg_right, 
+                                        ROBOT_WHEEL_TRACK, ROBOT_WHEEL_DIAMETER, 
+                                        ROBOT_GEAR_SETTING, ROBOT_GEAR_RATIO, vex::brakeType::coast);
+  startingPosition = VexGpsPose2d(-4_ft, -4_ft, 45_deg);
+  m_chassis.ResetPosition(startingPosition, 0_deg);
+  m_chassis.EnableOdom();
+  TrajectoryConfig config(3.5_ftps, 3.5 * ftps2);
+  // Add a turning constraint...seemed to turn ok at this acceleration
+  CentripetalAccelerationConstraint cac(3 * ftps2);
+  config.AddConstraint(cac);
+
+  //VexGpsPose2d vstart(-4_ft, -4_ft, 45_deg);
+  VexGpsPose2d vstart = startingPosition;
+  VexGpsPose2d vmid(0_ft, 0_ft, 45_deg);
+  VexGpsPose2d vend(4_ft, -4_ft, 135_deg);
+
+  Trajectory t;
+  std::vector<Translation2d> wp = {{0_ft, 0_ft}};
+  //std::vector<Translation2d> wp = {{2_ft, -2_ft}, {2_ft,2_ft}};
+  //std::vector<Translation2d> wp = {{2_ft, -2_ft}, {0_ft, 0_ft}, {2_ft,2_ft}};
+  t = TrajectoryGenerator::GenerateTrajectory(vstart, wp, vend, config);
+  SimpleTrajectoryFollower stf(m_chassis);
+  stf.FollowTrajectory(t);
+  printf("End testSimpleTrajectory\n");
+  VexGpsPose2d odomEnd = m_chassis.GetPose();
+  printf("Odom: %d, %d, %d\n", (int)odomEnd.X().convert(inch),
+                                (int)odomEnd.Y().convert(inch),
+                                (int)odomEnd.Theta().convert(degree));
+}
+
+void testSimpleTrajectoryReversed() {
+  printf("Start testSimpleTrajectoryReversed\n");
+  vex::motor ml1 = motor(ROBOT_LEFT_MOTOR_1, ROBOT_GEAR_SETTING, ROBOT_LEFT_MOTOR_1_REV);
+  vex::motor ml2 = motor(ROBOT_LEFT_MOTOR_2, ROBOT_GEAR_SETTING, ROBOT_LEFT_MOTOR_2_REV);
+  vex::motor ml3 = motor(ROBOT_LEFT_MOTOR_3, ROBOT_GEAR_SETTING, ROBOT_LEFT_MOTOR_3_REV);
+  vex::motor mr1 = motor(ROBOT_RIGHT_MOTOR_1, ROBOT_GEAR_SETTING, ROBOT_RIGHT_MOTOR_1_REV);
+  vex::motor mr2 = motor(ROBOT_RIGHT_MOTOR_2, ROBOT_GEAR_SETTING, ROBOT_RIGHT_MOTOR_2_REV);
+  vex::motor mr3 = motor(ROBOT_RIGHT_MOTOR_3, ROBOT_GEAR_SETTING, ROBOT_RIGHT_MOTOR_3_REV);
+  vex::motor_group mg_left{ml1, ml2 ,ml3};
+  vex::motor_group mg_right{mr1, mr2, mr3};
+  DifferentialDriveChassis m_chassis(mg_left, mg_right, 
+                                        ROBOT_WHEEL_TRACK, ROBOT_WHEEL_DIAMETER, 
+                                        ROBOT_GEAR_SETTING, ROBOT_GEAR_RATIO, vex::brakeType::coast);
+  startingPosition = VexGpsPose2d(-4_ft, -4_ft, 45_deg);
+  m_chassis.ResetPosition(startingPosition, 0_deg);
+  m_chassis.EnableOdom();
+  TrajectoryConfig config(3.5_ftps, 3.5 * ftps2);
+  // Add a turning constraint...seemed to turn ok at this acceleration
+  CentripetalAccelerationConstraint cac(3 * ftps2);
+  config.AddConstraint(cac);
+  config.SetReversed(true);
+
+  VexGpsPose2d vstart(-4_ft, -4_ft, 45_deg);
+  //VexGpsPose2d vstart = startingPosition;
+  VexGpsPose2d vmid(0_ft, 0_ft, 45_deg);
+  VexGpsPose2d vend(4_ft, -4_ft, 135_deg);
+
+  Trajectory t;
+  std::vector<Translation2d> wp = {{0_ft, 0_ft}};
+  // t = TrajectoryGenerator::GenerateTrajectory(vstart, wp, vend, config);
+  t = TrajectoryGenerator::GenerateTrajectory(vend, wp, vstart, config);
+  SimpleTrajectoryFollower stf(m_chassis);
+  stf.FollowTrajectory(t);
+  printf("End testSimpleTrajectoryReversed\n");
+  VexGpsPose2d odomEnd = m_chassis.GetPose();
+  printf("Odom: %d, %d, %d\n", (int)odomEnd.X().convert(inch),
+                                (int)odomEnd.Y().convert(inch),
+                                (int)odomEnd.Theta().convert(degree));
+}
+
+void testRamseteTrajectory() {
+  printf("Start testRamseteTrajectory\n");
+  vex::motor ml1 = motor(ROBOT_LEFT_MOTOR_1, ROBOT_GEAR_SETTING, ROBOT_LEFT_MOTOR_1_REV);
+  vex::motor ml2 = motor(ROBOT_LEFT_MOTOR_2, ROBOT_GEAR_SETTING, ROBOT_LEFT_MOTOR_2_REV);
+  vex::motor ml3 = motor(ROBOT_LEFT_MOTOR_3, ROBOT_GEAR_SETTING, ROBOT_LEFT_MOTOR_3_REV);
+  vex::motor mr1 = motor(ROBOT_RIGHT_MOTOR_1, ROBOT_GEAR_SETTING, ROBOT_RIGHT_MOTOR_1_REV);
+  vex::motor mr2 = motor(ROBOT_RIGHT_MOTOR_2, ROBOT_GEAR_SETTING, ROBOT_RIGHT_MOTOR_2_REV);
+  vex::motor mr3 = motor(ROBOT_RIGHT_MOTOR_3, ROBOT_GEAR_SETTING, ROBOT_RIGHT_MOTOR_3_REV);
+  vex::motor_group mg_left{ml1, ml2 ,ml3};
+  vex::motor_group mg_right{mr1, mr2, mr3};
+  DifferentialDriveChassis m_chassis(mg_left, mg_right, 
+                                        ROBOT_WHEEL_TRACK, ROBOT_WHEEL_DIAMETER, 
+                                        ROBOT_GEAR_SETTING, ROBOT_GEAR_RATIO, vex::brakeType::coast);
+  // Physical offset of sensor on the actual robot to the robot's center of rotation
+  vex::gps gpsSensor(ROBOT_GPS_PORT, ROBOT_GPS_MOUNT_OFFSET_X, ROBOT_GPS_MOUNT_OFFSET_Y, distanceUnits::in, ROBOT_GPS_MOUNT_OFFSET_HEADING);
+  setStartingPosition();
+  std::vector<vex::gps> vgps;
+  vgps.emplace_back(gpsSensor);
+  m_chassis.AddGpsSensors(&vgps);
+
+  m_chassis.ResetPosition(startingPosition, 0_deg);
+  m_chassis.EnableOdom();
+  TrajectoryConfig config(1_ftps, 1 * ftps2);
+  // Add a turning constraint...seemed to turn ok at this acceleration
+  CentripetalAccelerationConstraint cac(1 * ftps2);
+  config.AddConstraint(cac);
+
+  // VexGpsPose2d vstart(-4_ft, -4_ft, 45_deg);
+  VexGpsPose2d vstart = startingPosition;
+  VexGpsPose2d vmid(0_ft, 0_ft, 45_deg);
+  VexGpsPose2d vend(4_ft, -4_ft, 135_deg);
+
+  Trajectory t;
+  std::vector<Translation2d> wp = {{0_ft, 0_ft}};
+  //std::vector<Translation2d> wp = {{2_ft, -2_ft}, {2_ft,2_ft}};
+  //std::vector<Translation2d> wp = {{2_ft, -2_ft}, {0_ft, 0_ft}, {2_ft,2_ft}};
+  t = TrajectoryGenerator::GenerateTrajectory(vstart, wp, vend, config);
+  Pose2d tol({.5_in, .5_in}, 2 * degree);
+  RamseteTrajectoryFollower rtf(m_chassis, tol);
+  rtf.FollowTrajectory(t);
+  printf("End testRamseteTrajectory\n");
 }
 
 //
@@ -142,7 +268,7 @@ int main() {
     wait(20, msec);
   }
   */
-  /*
+
   // Physical offset of sensor on the actual robot to the robot's center of rotation
   vex::gps gpsSensor(ROBOT_GPS_PORT, ROBOT_GPS_MOUNT_OFFSET_X, ROBOT_GPS_MOUNT_OFFSET_Y, distanceUnits::in, ROBOT_GPS_MOUNT_OFFSET_HEADING);
   gpsSensor.calibrate();
@@ -151,7 +277,10 @@ int main() {
   }
   // Press the `A` button to set the starting point of the robot
   c.ButtonA.released(setStartingPosition);
-  */
+  c.ButtonX.released(testSimpleTrajectory);
+  c.ButtonY.released(testSimpleTrajectoryReversed);
+  c.ButtonB.released(testRamseteTrajectory);
+
   while (1) {
     // This is the main execution loop for the user control program.
     // Each time through the loop your program should update motor + servo
@@ -167,7 +296,7 @@ int main() {
 
     // We can't write to the Controller's LED very frequently, this should update
     // roughly once every second (e.g. 50 * 20 msec)
-    if(i++ > 50) {
+    if(i++ > 150) {
       // Display to the controller so we don't overwrite the tuning options on the Brain
       /* Uncomment this if you have an inertial sensor
       double h = inertialSensor.angle();
@@ -176,17 +305,16 @@ int main() {
       c.Screen.print("Heading: %.1f", h);
       c.Screen.newLine();
       */
-      /* Uncomment this if you have a GPS sensor
+      /* Uncomment this if you have a GPS sensor */
       c.Screen.clearScreen();
       c.Screen.setCursor(1,1);
       c.Screen.print("GPS: %d, %d, %d ", (int)gpsSensor.xPosition(distanceUnits::in),
                                     (int)gpsSensor.yPosition(distanceUnits::in),
                                     (int)gpsSensor.heading());
       c.Screen.newLine();
-      Point2d p(gpsSensor.xPosition(distanceUnits::in) * inch, gpsSensor.yPosition(distanceUnits::in) * inch);
-      c.Screen.print("D: %.1f ", startingPosition.DistanceTo(p).convert(inch));
-      c.Screen.newLine();
-      */
+      printf("GPS: %d, %d, %d\n", (int)gpsSensor.xPosition(distanceUnits::in),
+                                    (int)gpsSensor.yPosition(distanceUnits::in),
+                                    (int)gpsSensor.heading());
       i = 0;
     }
     wait(20, msec); // Sleep the task for a short amount of time to

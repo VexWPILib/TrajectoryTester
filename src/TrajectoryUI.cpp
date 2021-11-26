@@ -19,11 +19,11 @@ namespace vpi {
         //const char * txt = lv_btnmatrix_get_active_btn_text(obj);
         int i = lv_btnmatrix_get_active_btn(obj);
         printf("btnmEventHandler %d\n",i);
-        TrajectoryConfig config(3_ftps, 2 * ftps2);
+        TrajectoryConfig config(1_ftps, 1 * ftps2);
 
-        VexGpsPose2d vstart(4_ft, -4_ft, -45_deg);
-        VexGpsPose2d vmid(0_ft, 0_ft, -45_deg);
-        VexGpsPose2d vend(4_ft, 4_ft, 45_deg);
+        VexGpsPose2d vstart(-4_ft, -4_ft, 45_deg);
+        VexGpsPose2d vmid(0_ft, 0_ft, 45_deg);
+        VexGpsPose2d vend(4_ft, -4_ft, 135_deg);
 
         Trajectory t;
         std::vector<Translation2d> wp = {{0_ft, 0_ft}};
